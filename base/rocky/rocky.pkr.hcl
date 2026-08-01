@@ -46,15 +46,9 @@ variable "os_version" {
   description = "Human-readable OS version label (e.g. 9)"
 }
 
-variable "ami_name_filter" {
+variable "source_ami" {
   type        = string
-  description = "Glob pattern to locate the source Rocky Linux AMI"
-}
-
-variable "ami_owner_id" {
-  type        = string
-  description = "AWS account ID of the AMI publisher"
-  default     = "792107900819" # Rocky Linux official
+  description = "Source AMI ID to build from (pinned per version in pkrvars file)"
 }
 
 variable "ssh_username" {
@@ -63,27 +57,11 @@ variable "ssh_username" {
 }
 
 # ----------------------------
-# Data source — resolve latest matching AMI
-# ----------------------------
-data "amazon-ami" "rocky" {
-  region = var.aws_region
-  owners = [var.ami_owner_id]
-
-  filters = {
-    name                = var.ami_name_filter
-    root-device-type    = "ebs"
-    virtualization-type = "hvm"
-  }
-
-  most_recent = true
-}
-
-# ----------------------------
 # Source block
 # ----------------------------
 source "amazon-ebs" "rocky" {
   region                      = var.aws_region
-  source_ami                  = data.amazon-ami.rocky.id
+  source_ami                  = var.source_ami
   instance_type               = var.instance_type
   ssh_username                = var.ssh_username
   vpc_id                      = var.vpc_id

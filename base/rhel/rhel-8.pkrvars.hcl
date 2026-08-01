@@ -1,7 +1,7 @@
 # base/rhel/rhel-8.pkrvars.hcl
 # Red Hat Enterprise Linux 8 — previous supported
+# AMI: RHEL-8.10.0_HVM-20250313-x86_64-1026-Hourly2-GP2 (Red Hat 309956199498)
 
-os_version      = "8"
-ami_name_filter = "RHEL-8.*_HVM-*-x86_64-*"
-ami_owner_id    = "309956199498"
-ssh_username    = "ec2-user"
+os_version   = "8"
+source_ami   = "ami-0e0bf4b3a0877a00f"
+ssh_username = "ec2-user"

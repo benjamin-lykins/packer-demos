@@ -1,7 +1,7 @@
 # base/debian/debian-12.pkrvars.hcl
 # Debian 12 Bookworm — latest supported
+# AMI: debian-12-amd64-20250316-2053 (Debian 136693071363)
 
-os_version      = "12"
-ami_name_filter = "debian-12-amd64-*"
-ami_owner_id    = "136693071363"
-ssh_username    = "admin"
+os_version   = "12"
+source_ami   = "ami-064cdd2e89aa1b4fb"
+ssh_username = "admin"
