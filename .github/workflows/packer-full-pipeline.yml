@@ -1,0 +1,50 @@
+# .github/workflows/packer-full-pipeline.yml
+#
+# Orchestrates the full three-tier pipeline in sequence:
+#   base  →  middleware  →  app
+#
+# Triggered manually (workflow_dispatch) so you can run the entire chain
+# end-to-end without waiting for a push to matching paths.
+#
+# The middleware and app tiers each receive the most recent AMI ID output
+# from the prior tier as `source_ami`.
+
+name: "Packer — Full Pipeline (base → middleware → app)"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  # ------------------------------------------------------------------
+  # Tier 1 — Base images
+  # ------------------------------------------------------------------
+  base:
+    name: "Tier 1 — Base"
+    uses: ./.github/workflows/packer-base.yml
+    secrets: inherit
+
+  # ------------------------------------------------------------------
+  # Tier 2 — Middleware images (depends on base completing)
+  # ------------------------------------------------------------------
+  middleware:
+    name: "Tier 2 — Middleware"
+    needs: base
+    uses: ./.github/workflows/packer-middleware.yml
+    secrets: inherit
+    with:
+      # Pass the AMI ID output from the base tier as the source for
+      # all middleware builds. In practice you would parameterise this
+      # further per-middleware; this wires up a single shared base AMI
+      # as a starting point for the demo pipeline.
+      source_ami: ${{ needs.base.outputs.ami_id }}
+
+  # ------------------------------------------------------------------
+  # Tier 3 — App images (depends on middleware completing)
+  # ------------------------------------------------------------------
+  app:
+    name: "Tier 3 — App"
+    needs: middleware
+    uses: ./.github/workflows/packer-app.yml
+    secrets: inherit
+    with:
+      source_ami: ${{ needs.middleware.outputs.ami_id }}

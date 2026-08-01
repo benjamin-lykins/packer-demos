@@ -1,0 +1,215 @@
+# .github/workflows/packer-app.yml
+#
+# Builds all application AMIs. Matrix is loaded from .github/matrix.yml.
+# Designed to run after the middleware tier.
+#
+# Required repository secrets:
+#   AWS_ACCESS_KEY_ID
+#   AWS_SECRET_ACCESS_KEY
+#   AWS_SESSION_TOKEN        (optional — for STS assumed-role credentials)
+#
+# Required repository variables:
+#   AWS_REGION
+#   AWS_VPC_ID
+#   AWS_SUBNET_ID
+#   INSTANCE_TYPE
+#
+# Optional:
+#   SOURCE_AMI_MIDDLEWARE     Fallback middleware AMI for all app builds
+
+name: "Packer — App Images"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "common.pkrvars.hcl"
+      - ".github/matrices/app.yml"
+      - ".github/workflows/packer-app.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "common.pkrvars.hcl"
+      - ".github/matrices/app.yml"
+      - ".github/workflows/packer-app.yml"
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Limit to one app (leave blank for all)"
+        required: false
+        default: ""
+      source_ami:
+        description: "Override source_ami for all jobs (e.g. ami-0abc1234)"
+        required: false
+        default: ""
+  workflow_call:
+    inputs:
+      source_ami:
+        description: "Middleware AMI ID passed from the middleware tier"
+        required: false
+        type: string
+        default: ""
+    outputs:
+      ami_id:
+        description: "Last-built app AMI ID"
+        value: ${{ jobs.build.outputs.ami_id }}
+
+jobs:
+  # ------------------------------------------------------------------
+  # Load the app matrix from .github/matrix.yml
+  # ------------------------------------------------------------------
+  load-matrix:
+    name: "Load matrix"
+    uses: ./.github/workflows/matrix-output.yml
+
+  # ------------------------------------------------------------------
+  # Validate all templates on every push / PR (no AWS creds needed)
+  # ------------------------------------------------------------------
+  validate:
+    name: "validate / ${{ matrix.app }} ${{ matrix.version }}"
+    runs-on: ubuntu-latest
+    needs: load-matrix
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.load-matrix.outputs.app) }}
+
+    defaults:
+      run:
+        working-directory: app/${{ matrix.app }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: latest
+
+      - name: Packer init
+        run: packer init ${{ matrix.app }}.pkr.hcl
+
+      - name: Packer validate
+        # Validate using stub values — no real AWS creds required
+        env:
+          PKR_VAR_aws_region: "us-east-1"
+          PKR_VAR_vpc_id: "vpc-00000000"
+          PKR_VAR_subnet_id: "subnet-00000000"
+          PKR_VAR_source_ami: "ami-00000000"
+        run: |
+          packer validate \
+            -var-file=../../common.pkrvars.hcl \
+            -var-file=${{ matrix.vars_file }} \
+            ${{ matrix.app }}.pkr.hcl
+
+  # ------------------------------------------------------------------
+  # Build — runs on push to main, workflow_dispatch, or workflow_call
+  # ------------------------------------------------------------------
+  build:
+    name: "build / ${{ matrix.app }} ${{ matrix.version }}"
+    runs-on: ubuntu-latest
+    needs: load-matrix
+    if: github.event_name != 'pull_request'
+    environment: aws-packer
+
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include: ${{ fromJson(needs.load-matrix.outputs.app) }}
+
+    outputs:
+      ami_id: ${{ steps.build.outputs.ami_id }}
+
+    defaults:
+      run:
+        working-directory: app/${{ matrix.app }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: latest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region:            ${{ vars.AWS_REGION }}
+
+      - name: Write common vars file
+        working-directory: ${{ github.workspace }}
+        run: |
+          cat > common.pkrvars.hcl <<EOF
+          aws_region    = "${{ vars.AWS_REGION }}"
+          vpc_id        = "${{ vars.AWS_VPC_ID }}"
+          subnet_id     = "${{ vars.AWS_SUBNET_ID }}"
+          instance_type = "${{ vars.INSTANCE_TYPE }}"
+          EOF
+
+      - name: Check app filter
+        id: filter
+        run: |
+          APP_INPUT="${{ github.event.inputs.app }}"
+          if [ -n "$APP_INPUT" ] && [ "$APP_INPUT" != "${{ matrix.app }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Override source_ami in vars file
+        if: >
+          steps.filter.outputs.skip != 'true' && (
+          inputs.source_ami != '' ||
+          github.event.inputs.source_ami != '' ||
+          vars.SOURCE_AMI_MIDDLEWARE != '')
+        run: |
+          SOURCE="${{ inputs.source_ami || github.event.inputs.source_ami || vars.SOURCE_AMI_MIDDLEWARE }}"
+          sed -i "s|source_ami.*=.*|source_ami = \"${SOURCE}\"|" ${{ matrix.vars_file }}
+
+      - name: Packer init
+        if: steps.filter.outputs.skip != 'true'
+        run: packer init ${{ matrix.app }}.pkr.hcl
+
+      - name: Packer validate
+        if: steps.filter.outputs.skip != 'true'
+        run: |
+          packer validate \
+            -var-file=../../common.pkrvars.hcl \
+            -var-file=${{ matrix.vars_file }} \
+            ${{ matrix.app }}.pkr.hcl
+
+      - name: Packer build
+        id: build
+        if: steps.filter.outputs.skip != 'true'
+        run: |
+          packer build \
+            -var-file=../../common.pkrvars.hcl \
+            -var-file=${{ matrix.vars_file }} \
+            ${{ matrix.app }}.pkr.hcl | tee /tmp/packer-output.txt
+
+          AMI_ID=$(grep -oP 'ami-[a-f0-9]+' /tmp/packer-output.txt | tail -1)
+          echo "ami_id=${AMI_ID}" >> "$GITHUB_OUTPUT"
+          echo "### App AMI built" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| App | ${{ matrix.app }} ${{ matrix.version }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Region | ${{ vars.AWS_REGION }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| AMI ID | \`${AMI_ID}\` |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Packer log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packer-log-app-${{ matrix.app }}-${{ matrix.version }}
+          path: app/${{ matrix.app }}/packer.log
+          if-no-files-found: ignore

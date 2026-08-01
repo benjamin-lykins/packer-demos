@@ -1,0 +1,22 @@
+# .github/matrices/app.yml
+# Matrix entries for the application image tier.
+# Each entry maps to an app subdirectory under app/ and a pkrvars file.
+
+- app: frontend
+  version: v2
+  vars_file: frontend-v2.pkrvars.hcl
+- app: frontend
+  version: v1
+  vars_file: frontend-v1.pkrvars.hcl
+- app: backend
+  version: v2
+  vars_file: backend-v2.pkrvars.hcl
+- app: backend
+  version: v1
+  vars_file: backend-v1.pkrvars.hcl
+- app: worker
+  version: v2
+  vars_file: worker-v2.pkrvars.hcl
+- app: worker
+  version: v1
+  vars_file: worker-v1.pkrvars.hcl

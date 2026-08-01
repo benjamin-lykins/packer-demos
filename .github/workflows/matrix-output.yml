@@ -1,0 +1,69 @@
+# .github/workflows/matrix-output.yml
+#
+# Reusable workflow — reads each file under .github/matrices/ and emits
+# each tier's matrix as a compact JSON string.
+#
+# Matrices are split into individual files:
+#   .github/matrices/base.yml
+#   .github/matrices/middleware.yml
+#   .github/matrices/app.yml
+#
+# Usage in a caller workflow:
+#
+#   jobs:
+#     load-matrix:
+#       uses: ./.github/workflows/matrix-output.yml
+#
+#     build:
+#       needs: load-matrix
+#       strategy:
+#         matrix:
+#           include: ${{ fromJson(needs.load-matrix.outputs.base) }}
+#
+# No secrets or inputs required.
+
+name: "Matrix — Load"
+
+on:
+  workflow_call:
+    outputs:
+      base:
+        description: "JSON array of base matrix entries"
+        value: ${{ jobs.load.outputs.base }}
+      middleware:
+        description: "JSON array of middleware matrix entries"
+        value: ${{ jobs.load.outputs.middleware }}
+      app:
+        description: "JSON array of app matrix entries"
+        value: ${{ jobs.load.outputs.app }}
+
+jobs:
+  load:
+    name: "Load matrix.yml"
+    runs-on: ubuntu-latest
+
+    outputs:
+      base:       ${{ steps.parse.outputs.base }}
+      middleware: ${{ steps.parse.outputs.middleware }}
+      app:        ${{ steps.parse.outputs.app }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Parse matrix files
+        id: parse
+        run: |
+          BASE=$(yq -o=json '.' .github/matrices/base.yml | jq -c .)
+          MIDDLEWARE=$(yq -o=json '.' .github/matrices/middleware.yml | jq -c .)
+          APP=$(yq -o=json '.' .github/matrices/app.yml | jq -c .)
+
+          echo "base=${BASE}"            >> "$GITHUB_OUTPUT"
+          echo "middleware=${MIDDLEWARE}" >> "$GITHUB_OUTPUT"
+          echo "app=${APP}"              >> "$GITHUB_OUTPUT"

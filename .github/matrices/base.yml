@@ -1,0 +1,28 @@
+# .github/matrices/base.yml
+# Matrix entries for the base OS image tier.
+# Each entry maps to a distro subdirectory under base/ and a pkrvars file.
+
+- distro: ubuntu
+  version: "24"
+  vars_file: ubuntu-24.pkrvars.hcl
+- distro: ubuntu
+  version: "22"
+  vars_file: ubuntu-22.pkrvars.hcl
+- distro: rhel
+  version: "9"
+  vars_file: rhel-9.pkrvars.hcl
+- distro: rhel
+  version: "8"
+  vars_file: rhel-8.pkrvars.hcl
+- distro: debian
+  version: "12"
+  vars_file: debian-12.pkrvars.hcl
+- distro: debian
+  version: "11"
+  vars_file: debian-11.pkrvars.hcl
+- distro: rocky
+  version: "9"
+  vars_file: rocky-9.pkrvars.hcl
+- distro: rocky
+  version: "8"
+  vars_file: rocky-8.pkrvars.hcl
