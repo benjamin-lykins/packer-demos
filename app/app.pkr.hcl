@@ -1,13 +1,12 @@
 # ============================================================
-# app/worker/worker.pkr.hcl
-# Packer template for a mock Worker application AMI.
-# Provisioner is a structural placeholder only — no real app code.
+# app/app.pkr.hcl
+# Single Packer template for all application AMIs.
 #
-# Build (from this directory):
+# Build:
 #   packer build \
-#     -var-file=../../common.pkrvars.hcl \
-#     -var-file=worker-v2.pkrvars.hcl \
-#     worker.pkr.hcl
+#     -var-file=../common.pkrvars.hcl \
+#     -var-file=backend/backend-v2.pkrvars.hcl \
+#     app.pkr.hcl
 # ============================================================
 
 packer {
@@ -19,11 +18,11 @@ packer {
   }
 
   hcp_packer_registry {
-    bucket_name = "app-worker-${replace(var.app_version, ".", "-")}"
-    description = "Worker application ${var.app_version} image"
+    bucket_name = "app-${var.app_name}-${replace(var.app_version, ".", "-")}"
+    description = "${var.app_name} application ${var.app_version} image"
     bucket_labels = {
       "layer" = "app"
-      "app"   = "worker"
+      "app"   = var.app_name
     }
   }
 }
@@ -51,6 +50,11 @@ variable "instance_type" {
 # ----------------------------
 # Variables — version-specific
 # ----------------------------
+variable "app_name" {
+  type        = string
+  description = "Application name label used in bucket/AMI names (e.g. backend, frontend, worker)"
+}
+
 variable "app_version" {
   type        = string
   description = "Application version label (e.g. v2.0.0)"
@@ -75,28 +79,28 @@ variable "output_ami_name" {
 # HCP Packer source AMI lookup
 # ----------------------------
 data "hcp-packer-artifact" "middleware" {
-  bucket_name         = var.hcp_source_bucket
-  platform            = "aws"
-  region              = var.aws_region
-  channel_name        = "latest"
+  bucket_name  = var.hcp_source_bucket
+  platform     = "aws"
+  region       = var.aws_region
+  channel_name = "latest"
 }
 
 # ----------------------------
 # Source block
 # ----------------------------
-source "amazon-ebs" "worker" {
+source "amazon-ebs" "app" {
   region                 = var.aws_region
   skip_region_validation = true
   source_ami             = data.hcp-packer-artifact.middleware.external_identifier
-  instance_type = var.instance_type
-  ssh_username  = var.ssh_username
-  vpc_id        = var.vpc_id
-  subnet_id     = var.subnet_id
-  ami_name      = var.output_ami_name
+  instance_type          = var.instance_type
+  ssh_username           = var.ssh_username
+  vpc_id                 = var.vpc_id
+  subnet_id              = var.subnet_id
+  ami_name               = var.output_ami_name
 
   tags = {
     Name       = var.output_ami_name
-    App        = "worker"
+    App        = var.app_name
     AppVersion = var.app_version
     Layer      = "app"
     ManagedBy  = "packer"
@@ -107,29 +111,13 @@ source "amazon-ebs" "worker" {
 # Build block
 # ----------------------------
 build {
-  name    = "app-worker-${var.app_version}"
-
-  sources = ["source.amazon-ebs.worker"]
+  name    = "app-${var.app_name}-${var.app_version}"
+  sources = ["source.amazon-ebs.app"]
 
   provisioner "shell" {
     inline = [
-      "echo '==> Worker ${var.app_version} provisioning started'",
-      "",
-      "# --- Install runtime dependencies ---",
-      "# sudo dnf install -y java-17-openjdk",
-      "",
-      "# --- Pull worker artifact ---",
-      "# aws s3 cp s3://<BUCKET>/worker-${var.app_version}.jar /opt/worker/app.jar",
-      "",
-      "# --- Deploy systemd service unit ---",
-      "# sudo cp /tmp/worker.service /etc/systemd/system/worker.service",
-      "# sudo systemctl daemon-reload",
-      "# sudo systemctl enable worker && sudo systemctl start worker",
-      "",
-      "# --- Verify worker process is running ---",
-      "# systemctl is-active --quiet worker || exit 1",
-      "",
-      "echo '==> Worker ${var.app_version} provisioning placeholder complete'",
+      "echo '==> ${var.app_name} ${var.app_version} provisioning started'",
+      "echo '==> ${var.app_name} ${var.app_version} provisioning placeholder complete'",
     ]
   }
 }

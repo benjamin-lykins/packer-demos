@@ -72,7 +72,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: middleware/${{ matrix.middleware }}
+        working-directory: middleware
 
     steps:
       - name: Checkout
@@ -84,7 +84,7 @@ jobs:
           version: latest
 
       - name: Packer init
-        run: packer init ${{ matrix.middleware }}.pkr.hcl
+        run: packer init middleware.pkr.hcl
 
       - name: Packer validate
         # Validate using stub values — no real AWS creds required
@@ -95,9 +95,9 @@ jobs:
           PKR_VAR_hcp_source_bucket: "stub-bucket"
         run: |
           packer validate \
-            -var-file=../../common.pkrvars.hcl \
+            -var-file=../common.pkrvars.hcl \
             -var-file=${{ matrix.vars_file }} \
-            ${{ matrix.middleware }}.pkr.hcl
+            middleware.pkr.hcl
 
   # ------------------------------------------------------------------
   # Build — runs on push to main, workflow_dispatch, or workflow_call
@@ -127,7 +127,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: middleware/${{ matrix.middleware }}
+        working-directory: middleware
 
     steps:
       - name: Checkout
@@ -175,24 +175,24 @@ jobs:
 
       - name: Packer init
         if: steps.filter.outputs.skip != 'true'
-        run: packer init ${{ matrix.middleware }}.pkr.hcl
+        run: packer init middleware.pkr.hcl
 
       - name: Packer validate
         if: steps.filter.outputs.skip != 'true'
         run: |
           packer validate \
-            -var-file=../../common.pkrvars.hcl \
+            -var-file=../common.pkrvars.hcl \
             -var-file=${{ matrix.vars_file }} \
-            ${{ matrix.middleware }}.pkr.hcl
+            middleware.pkr.hcl
 
       - name: Packer build
         id: build
         if: steps.filter.outputs.skip != 'true'
         run: |
           packer build \
-            -var-file=../../common.pkrvars.hcl \
+            -var-file=../common.pkrvars.hcl \
             -var-file=${{ matrix.vars_file }} \
-            ${{ matrix.middleware }}.pkr.hcl | tee /tmp/packer-output.txt
+            middleware.pkr.hcl | tee /tmp/packer-output.txt
 
           AMI_ID=$(grep -oP 'ami-[a-f0-9]+' /tmp/packer-output.txt | tail -1)
           echo "ami_id=${AMI_ID}" >> "$GITHUB_OUTPUT"
@@ -208,5 +208,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: packer-log-middleware-${{ matrix.middleware }}-${{ matrix.version }}
-          path: middleware/${{ matrix.middleware }}/packer.log
+          path: middleware/packer.log
           if-no-files-found: ignore

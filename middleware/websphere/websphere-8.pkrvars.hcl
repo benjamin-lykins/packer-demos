@@ -1,6 +1,7 @@
 # middleware/websphere/websphere-8.pkrvars.hcl
 # IBM WebSphere Application Server 8.5 — previous supported
 
+middleware_name    = "websphere"
 middleware_version = "8.5"
 hcp_source_bucket  = "base-rhel-8"
 ssh_username       = "ec2-user"

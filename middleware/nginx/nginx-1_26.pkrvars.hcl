@@ -1,6 +1,7 @@
 # middleware/nginx/nginx-1_26.pkrvars.hcl
 # Nginx 1.26 — previous stable
 
+middleware_name    = "nginx"
 middleware_version = "1.26"
 hcp_source_bucket  = "base-ubuntu-24"
 ssh_username       = "ec2-user"

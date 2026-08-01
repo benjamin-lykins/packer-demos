@@ -1,12 +1,12 @@
 # ============================================================
-# base/debian/debian.pkr.hcl
-# Packer template for Debian base AMI.
+# base/base.pkr.hcl
+# Single Packer template for all base OS AMIs.
 #
-# Build (from this directory):
+# Build:
 #   packer build \
-#     -var-file=../../common.pkrvars.hcl \
-#     -var-file=debian-12.pkrvars.hcl \
-#     debian.pkr.hcl
+#     -var-file=../common.pkrvars.hcl \
+#     -var-file=rhel/rhel-9.pkrvars.hcl \
+#     base.pkr.hcl
 # ============================================================
 
 packer {
@@ -18,11 +18,11 @@ packer {
   }
 
   hcp_packer_registry {
-    bucket_name = "base-debian-${replace(var.os_version, ".", "-")}"
-    description = "Base Debian ${var.os_version} image"
+    bucket_name = "base-${var.os_name}-${replace(var.os_version, ".", "-")}"
+    description = "Base ${var.os_name} ${var.os_version} image"
     bucket_labels = {
       "layer" = "base"
-      "os"    = "debian"
+      "os"    = var.os_name
     }
   }
 }
@@ -50,9 +50,14 @@ variable "instance_type" {
 # ----------------------------
 # Variables — version-specific
 # ----------------------------
+variable "os_name" {
+  type        = string
+  description = "OS name label used in bucket/AMI names (e.g. rhel, ubuntu, debian, rocky)"
+}
+
 variable "os_version" {
   type        = string
-  description = "Human-readable OS version label (e.g. 12)"
+  description = "Human-readable OS version label (e.g. 9, 24.04, 12)"
 }
 
 variable "source_ami" {
@@ -61,14 +66,20 @@ variable "source_ami" {
 }
 
 variable "ssh_username" {
-  type    = string
-  default = "admin"
+  type        = string
+  description = "SSH username for the source AMI (e.g. ec2-user, ubuntu, admin, rocky)"
+}
+
+variable "update_cmd" {
+  type        = string
+  default     = "sudo dnf update -y"
+  description = "Package manager update command for the OS (e.g. sudo apt-get update -y)"
 }
 
 # ----------------------------
 # Source block
 # ----------------------------
-source "amazon-ebs" "debian" {
+source "amazon-ebs" "base" {
   region                      = var.aws_region
   skip_region_validation      = true
   source_ami                  = var.source_ami
@@ -77,12 +88,12 @@ source "amazon-ebs" "debian" {
   vpc_id                      = var.vpc_id
   subnet_id                   = var.subnet_id
   associate_public_ip_address = true
-  ami_name                    = "base-debian-${var.os_version}-{{timestamp}}"
-  ami_description = "Base Debian ${var.os_version} image"
+  ami_name                    = "base-${var.os_name}-${var.os_version}-{{timestamp}}"
+  ami_description             = "Base ${var.os_name} ${var.os_version} image"
 
   tags = {
-    Name      = "base-debian-${var.os_version}"
-    OS        = "Debian"
+    Name      = "base-${var.os_name}-${var.os_version}"
+    OS        = var.os_name
     OSVersion = var.os_version
     Layer     = "base"
     ManagedBy = "packer"
@@ -93,14 +104,13 @@ source "amazon-ebs" "debian" {
 # Build block
 # ----------------------------
 build {
-  name    = "base-debian-${var.os_version}"
-
-  sources = ["source.amazon-ebs.debian"]
+  name    = "base-${var.os_name}-${var.os_version}"
+  sources = ["source.amazon-ebs.base"]
 
   provisioner "shell" {
     inline = [
-      "echo '==> Base Debian ${var.os_version} provisioning started'",
-      "sudo apt-get update -y",
+      "echo '==> Base ${var.os_name} ${var.os_version} provisioning started'",
+      var.update_cmd,
       "echo '==> Base provisioning complete'",
     ]
   }

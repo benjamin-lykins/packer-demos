@@ -1,6 +1,7 @@
 # middleware/websphere/websphere-9.pkrvars.hcl
 # IBM WebSphere Application Server 9.0 — latest supported
 
+middleware_name    = "websphere"
 middleware_version = "9.0"
 hcp_source_bucket  = "base-rhel-9"
 ssh_username       = "ec2-user"

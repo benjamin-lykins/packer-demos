@@ -1,40 +1,41 @@
 # .github/matrices/middleware.yml
 # Matrix entries for the middleware image tier.
 # Each entry maps to a middleware subdirectory under middleware/ and a pkrvars file.
+# vars_file paths are relative to the middleware/ layer root.
 
 - middleware: weblogic
   version: "14"
-  vars_file: weblogic-14.pkrvars.hcl
+  vars_file: weblogic/weblogic-14.pkrvars.hcl
 - middleware: weblogic
   version: "12"
-  vars_file: weblogic-12.pkrvars.hcl
+  vars_file: weblogic/weblogic-12.pkrvars.hcl
 - middleware: websphere
   version: "9"
-  vars_file: websphere-9.pkrvars.hcl
+  vars_file: websphere/websphere-9.pkrvars.hcl
 - middleware: websphere
   version: "8"
-  vars_file: websphere-8.pkrvars.hcl
+  vars_file: websphere/websphere-8.pkrvars.hcl
 - middleware: jboss
   version: "8"
-  vars_file: jboss-8.pkrvars.hcl
+  vars_file: jboss/jboss-8.pkrvars.hcl
 - middleware: jboss
   version: "7"
-  vars_file: jboss-7.pkrvars.hcl
+  vars_file: jboss/jboss-7.pkrvars.hcl
 - middleware: nginx
   version: "1_27"
-  vars_file: nginx-1_27.pkrvars.hcl
+  vars_file: nginx/nginx-1_27.pkrvars.hcl
 - middleware: nginx
   version: "1_26"
-  vars_file: nginx-1_26.pkrvars.hcl
+  vars_file: nginx/nginx-1_26.pkrvars.hcl
 - middleware: apache-httpd
   version: "2_4"
-  vars_file: apache-httpd-2_4.pkrvars.hcl
+  vars_file: apache-httpd/apache-httpd-2_4.pkrvars.hcl
 - middleware: apache-httpd
   version: "2_2"
-  vars_file: apache-httpd-2_2.pkrvars.hcl
+  vars_file: apache-httpd/apache-httpd-2_2.pkrvars.hcl
 - middleware: tomcat
   version: "11"
-  vars_file: tomcat-11.pkrvars.hcl
+  vars_file: tomcat/tomcat-11.pkrvars.hcl
 - middleware: tomcat
   version: "10"
-  vars_file: tomcat-10.pkrvars.hcl
+  vars_file: tomcat/tomcat-10.pkrvars.hcl

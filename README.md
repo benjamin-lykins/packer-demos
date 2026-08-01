@@ -8,6 +8,8 @@ A structured Packer image pipeline for AWS (`amazon-ebs`) with three layers:
 | **middleware** | Runtime platform images built on top of a base AMI — WebLogic, WebSphere, JBoss, Nginx, Apache HTTPD, Tomcat |
 | **app** | Application images built on top of a middleware or base AMI — frontend, backend, worker |
 
+Each layer has one shared Packer template; version-specific `.pkrvars.hcl` files under product subdirectories drive differentiation.
+
 ---
 
 ## Directory Structure
@@ -17,60 +19,50 @@ packer-demos/
 ├── common.pkrvars.hcl              # Shared AWS variables (region, VPC, subnet, instance type)
 │
 ├── base/
+│   ├── base.pkr.hcl                # Shared base template
 │   ├── ubuntu/
-│   │   ├── ubuntu.pkr.hcl
 │   │   ├── ubuntu-24.pkrvars.hcl   # Ubuntu 24.04 LTS — latest
 │   │   └── ubuntu-22.pkrvars.hcl   # Ubuntu 22.04 LTS — previous
 │   ├── rhel/
-│   │   ├── rhel.pkr.hcl
 │   │   ├── rhel-9.pkrvars.hcl      # RHEL 9 — latest
 │   │   └── rhel-8.pkrvars.hcl      # RHEL 8 — previous
 │   ├── debian/
-│   │   ├── debian.pkr.hcl
 │   │   ├── debian-12.pkrvars.hcl   # Debian 12 Bookworm — latest
 │   │   └── debian-11.pkrvars.hcl   # Debian 11 Bullseye — previous
 │   └── rocky/
-│       ├── rocky.pkr.hcl
 │       ├── rocky-9.pkrvars.hcl     # Rocky Linux 9 — latest
 │       └── rocky-8.pkrvars.hcl     # Rocky Linux 8 — previous
 │
 ├── middleware/
+│   ├── middleware.pkr.hcl          # Shared middleware template
 │   ├── weblogic/
-│   │   ├── weblogic.pkr.hcl
 │   │   ├── weblogic-14.pkrvars.hcl # WebLogic 14.1.1 — latest
 │   │   └── weblogic-12.pkrvars.hcl # WebLogic 12.2.1 — previous
 │   ├── websphere/
-│   │   ├── websphere.pkr.hcl
 │   │   ├── websphere-9.pkrvars.hcl # WebSphere 9.0 — latest
 │   │   └── websphere-8.pkrvars.hcl # WebSphere 8.5 — previous
 │   ├── jboss/
-│   │   ├── jboss.pkr.hcl
 │   │   ├── jboss-8.pkrvars.hcl     # JBoss EAP 8.0 — latest
 │   │   └── jboss-7.pkrvars.hcl     # JBoss EAP 7.4 — previous
 │   ├── nginx/
-│   │   ├── nginx.pkr.hcl
 │   │   ├── nginx-1_27.pkrvars.hcl  # Nginx 1.27 — latest
 │   │   └── nginx-1_26.pkrvars.hcl  # Nginx 1.26 — previous
 │   ├── apache-httpd/
-│   │   ├── apache-httpd.pkr.hcl
 │   │   ├── apache-httpd-2_4.pkrvars.hcl # Apache HTTPD 2.4 — latest
 │   │   └── apache-httpd-2_2.pkrvars.hcl # Apache HTTPD 2.2 — previous
 │   └── tomcat/
-│       ├── tomcat.pkr.hcl
 │       ├── tomcat-11.pkrvars.hcl   # Tomcat 11.0 — latest
 │       └── tomcat-10.pkrvars.hcl   # Tomcat 10.1 — previous
 │
 └── app/
+    ├── app.pkr.hcl                 # Shared app template
     ├── frontend/
-    │   ├── frontend.pkr.hcl
     │   ├── frontend-v2.pkrvars.hcl # v2.0.0 — current
     │   └── frontend-v1.pkrvars.hcl # v1.0.0 — previous
     ├── backend/
-    │   ├── backend.pkr.hcl
     │   ├── backend-v2.pkrvars.hcl  # v2.0.0 — current
     │   └── backend-v1.pkrvars.hcl  # v1.0.0 — previous
     └── worker/
-        ├── worker.pkr.hcl
         ├── worker-v2.pkrvars.hcl   # v2.0.0 — current
         └── worker-v1.pkrvars.hcl   # v1.0.0 — previous
 ```
@@ -100,93 +92,88 @@ instance_type = "t3.micro"
 
 ### 2. Initialize the Packer plugin
 
-Run this once from any template directory (or from the workspace root):
+Run this once from the layer root:
 
 ```bash
-packer init <template>.pkr.hcl
+cd base && packer init base.pkr.hcl
+cd ../middleware && packer init middleware.pkr.hcl
+cd ../app && packer init app.pkr.hcl
 ```
 
 ---
 
 ## How to Build
 
-All builds follow the same two-file pattern:
+All builds follow the same two-file pattern, run from the layer root (`base/`, `middleware/`, or `app/`):
 
 ```
 packer build \
-  -var-file=../../common.pkrvars.hcl \
-  -var-file=<version>.pkrvars.hcl \
-  <template>.pkr.hcl
+  -var-file=../common.pkrvars.hcl \
+  -var-file=<product>/<version>.pkrvars.hcl \
+  <layer>.pkr.hcl
 ```
-
-The relative path `../../common.pkrvars.hcl` assumes you run the command **from inside the image directory**.
 
 ### Base Images
 
 ```bash
+cd base
+
 # Ubuntu 24.04
-cd base/ubuntu
-packer build -var-file=../../common.pkrvars.hcl -var-file=ubuntu-24.pkrvars.hcl ubuntu.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=ubuntu/ubuntu-24.pkrvars.hcl base.pkr.hcl
 
 # Ubuntu 22.04
-packer build -var-file=../../common.pkrvars.hcl -var-file=ubuntu-22.pkrvars.hcl ubuntu.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=ubuntu/ubuntu-22.pkrvars.hcl base.pkr.hcl
 
 # RHEL 9
-cd base/rhel
-packer build -var-file=../../common.pkrvars.hcl -var-file=rhel-9.pkrvars.hcl rhel.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=rhel/rhel-9.pkrvars.hcl base.pkr.hcl
 
 # RHEL 8
-packer build -var-file=../../common.pkrvars.hcl -var-file=rhel-8.pkrvars.hcl rhel.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=rhel/rhel-8.pkrvars.hcl base.pkr.hcl
 
 # Debian 12
-cd base/debian
-packer build -var-file=../../common.pkrvars.hcl -var-file=debian-12.pkrvars.hcl debian.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=debian/debian-12.pkrvars.hcl base.pkr.hcl
 
 # Rocky Linux 9
-cd base/rocky
-packer build -var-file=../../common.pkrvars.hcl -var-file=rocky-9.pkrvars.hcl rocky.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=rocky/rocky-9.pkrvars.hcl base.pkr.hcl
 ```
 
 ### Middleware Images
 
 > Before building a middleware image, set `source_ami` in the `.pkrvars.hcl` file to the AMI ID
-> output by your base layer build.
+> output by your base layer build (or rely on HCP Packer channel lookup).
 
 ```bash
+cd middleware
+
 # WebLogic 14.1.1
-cd middleware/weblogic
-packer build -var-file=../../common.pkrvars.hcl -var-file=weblogic-14.pkrvars.hcl weblogic.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=weblogic/weblogic-14.pkrvars.hcl middleware.pkr.hcl
 
 # JBoss EAP 8.0
-cd middleware/jboss
-packer build -var-file=../../common.pkrvars.hcl -var-file=jboss-8.pkrvars.hcl jboss.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=jboss/jboss-8.pkrvars.hcl middleware.pkr.hcl
 
 # Nginx 1.27
-cd middleware/nginx
-packer build -var-file=../../common.pkrvars.hcl -var-file=nginx-1_27.pkrvars.hcl nginx.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=nginx/nginx-1_27.pkrvars.hcl middleware.pkr.hcl
 
 # Tomcat 11.0
-cd middleware/tomcat
-packer build -var-file=../../common.pkrvars.hcl -var-file=tomcat-11.pkrvars.hcl tomcat.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=tomcat/tomcat-11.pkrvars.hcl middleware.pkr.hcl
 ```
 
 ### Application Images
 
 > Before building an app image, set `source_ami` in the `.pkrvars.hcl` file to the AMI ID
-> output by your middleware or base layer build.
+> output by your middleware or base layer build (or rely on HCP Packer channel lookup).
 
 ```bash
+cd app
+
 # Frontend v2
-cd app/frontend
-packer build -var-file=../../common.pkrvars.hcl -var-file=frontend-v2.pkrvars.hcl frontend.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=frontend/frontend-v2.pkrvars.hcl app.pkr.hcl
 
 # Backend v2
-cd app/backend
-packer build -var-file=../../common.pkrvars.hcl -var-file=backend-v2.pkrvars.hcl backend.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=backend/backend-v2.pkrvars.hcl app.pkr.hcl
 
 # Worker v1
-cd app/worker
-packer build -var-file=../../common.pkrvars.hcl -var-file=worker-v1.pkrvars.hcl worker.pkr.hcl
+packer build -var-file=../common.pkrvars.hcl -var-file=worker/worker-v1.pkrvars.hcl app.pkr.hcl
 ```
 
 ---
@@ -196,11 +183,11 @@ packer build -var-file=../../common.pkrvars.hcl -var-file=worker-v1.pkrvars.hcl 
 | File | Purpose |
 |------|---------|
 | `common.pkrvars.hcl` | Shared AWS infrastructure variables — region, VPC, subnet, instance type |
-| `<name>-<version>.pkrvars.hcl` | Version-specific variables — AMI filter or version label, source AMI, output AMI name |
+| `<product>/<name>-<version>.pkrvars.hcl` | Version-specific variables — AMI filter or version label, source AMI, output AMI name |
 
-Each template defines `variable` blocks for everything it needs. You always pass **two** `-var-file` flags:
-1. `../../common.pkrvars.hcl` — infrastructure
-2. `<version>.pkrvars.hcl` — image-specific values
+Each shared template defines `variable` blocks for everything it needs. You always pass **two** `-var-file` flags from the layer root:
+1. `../common.pkrvars.hcl` — infrastructure
+2. `<product>/<version>.pkrvars.hcl` — image-specific values
 
 ---
 
@@ -233,6 +220,6 @@ produced by the previous layer's build.
 Use `packer validate` to syntax-check any template without launching an AWS instance:
 
 ```bash
-cd base/ubuntu
-packer validate -var-file=../../common.pkrvars.hcl -var-file=ubuntu-24.pkrvars.hcl ubuntu.pkr.hcl
+cd base
+packer validate -var-file=../common.pkrvars.hcl -var-file=ubuntu/ubuntu-24.pkrvars.hcl base.pkr.hcl
 ```

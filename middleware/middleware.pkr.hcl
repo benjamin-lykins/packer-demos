@@ -1,13 +1,12 @@
 # ============================================================
-# middleware/nginx/nginx.pkr.hcl
-# Packer template for Nginx middleware AMI.
-# Provisioner is a structural placeholder only — no real install.
+# middleware/middleware.pkr.hcl
+# Single Packer template for all middleware AMIs.
 #
-# Build (from this directory):
+# Build:
 #   packer build \
-#     -var-file=../../common.pkrvars.hcl \
-#     -var-file=nginx-1_27.pkrvars.hcl \
-#     nginx.pkr.hcl
+#     -var-file=../common.pkrvars.hcl \
+#     -var-file=apache-httpd/apache-httpd-2_4.pkrvars.hcl \
+#     middleware.pkr.hcl
 # ============================================================
 
 packer {
@@ -19,11 +18,11 @@ packer {
   }
 
   hcp_packer_registry {
-    bucket_name = "middleware-nginx-${replace(var.middleware_version, ".", "-")}"
-    description = "Nginx ${var.middleware_version} middleware image"
+    bucket_name = "middleware-${var.middleware_name}-${replace(var.middleware_version, ".", "-")}"
+    description = "${var.middleware_name} ${var.middleware_version} middleware image"
     bucket_labels = {
       "layer"      = "middleware"
-      "middleware" = "nginx"
+      "middleware" = var.middleware_name
     }
   }
 }
@@ -51,9 +50,14 @@ variable "instance_type" {
 # ----------------------------
 # Variables — version-specific
 # ----------------------------
+variable "middleware_name" {
+  type        = string
+  description = "Middleware name label used in bucket/AMI names (e.g. apache-httpd, nginx, tomcat)"
+}
+
 variable "middleware_version" {
   type        = string
-  description = "Nginx version label (e.g. 1.27)"
+  description = "Middleware version label (e.g. 2.4, 1.27, 11.0)"
 }
 
 variable "hcp_source_bucket" {
@@ -75,28 +79,28 @@ variable "output_ami_name" {
 # HCP Packer source AMI lookup
 # ----------------------------
 data "hcp-packer-artifact" "base" {
-  bucket_name         = var.hcp_source_bucket
-  platform            = "aws"
-  region              = var.aws_region
-  channel_name        = "latest"
+  bucket_name  = var.hcp_source_bucket
+  platform     = "aws"
+  region       = var.aws_region
+  channel_name = "latest"
 }
 
 # ----------------------------
 # Source block
 # ----------------------------
-source "amazon-ebs" "nginx" {
+source "amazon-ebs" "middleware" {
   region                 = var.aws_region
   skip_region_validation = true
   source_ami             = data.hcp-packer-artifact.base.external_identifier
-  instance_type = var.instance_type
-  ssh_username  = var.ssh_username
-  vpc_id        = var.vpc_id
-  subnet_id     = var.subnet_id
-  ami_name      = var.output_ami_name
+  instance_type          = var.instance_type
+  ssh_username           = var.ssh_username
+  vpc_id                 = var.vpc_id
+  subnet_id              = var.subnet_id
+  ami_name               = var.output_ami_name
 
   tags = {
     Name              = var.output_ami_name
-    Middleware        = "Nginx"
+    Middleware        = var.middleware_name
     MiddlewareVersion = var.middleware_version
     Layer             = "middleware"
     ManagedBy         = "packer"
@@ -107,29 +111,13 @@ source "amazon-ebs" "nginx" {
 # Build block
 # ----------------------------
 build {
-  name    = "middleware-nginx-${var.middleware_version}"
-
-  sources = ["source.amazon-ebs.nginx"]
+  name    = "middleware-${var.middleware_name}-${var.middleware_version}"
+  sources = ["source.amazon-ebs.middleware"]
 
   provisioner "shell" {
     inline = [
-      "echo '==> Nginx ${var.middleware_version} provisioning started'",
-      "",
-      "# --- Add Nginx official repo ---",
-      "# sudo tee /etc/yum.repos.d/nginx.repo <<'EOF'",
-      "# [nginx-stable]",
-      "# name=nginx stable repo",
-      "# baseurl=http://nginx.org/packages/centos/$releasever/$basearch/",
-      "# gpgcheck=1",
-      "# EOF",
-      "",
-      "# --- Install Nginx ---",
-      "# sudo dnf install -y nginx-${var.middleware_version}",
-      "",
-      "# --- Enable and start ---",
-      "# sudo systemctl enable nginx && sudo systemctl start nginx",
-      "",
-      "echo '==> Nginx ${var.middleware_version} provisioning placeholder complete'",
+      "echo '==> ${var.middleware_name} ${var.middleware_version} provisioning started'",
+      "echo '==> ${var.middleware_name} ${var.middleware_version} provisioning placeholder complete'",
     ]
   }
 }
