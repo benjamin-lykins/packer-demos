@@ -104,7 +104,7 @@ build {
   name    = "app-frontend-${var.app_version}"
 
   hcp_packer_registry {
-    bucket_name = "app-frontend-${var.app_version}"
+    bucket_name = "app-frontend-${replace(var.app_version, ".", "-")}"
     description = "Frontend application ${var.app_version} image"
     bucket_labels = {
       "layer" = "app"

@@ -104,7 +104,7 @@ build {
   name    = "middleware-jboss-${var.middleware_version}"
 
   hcp_packer_registry {
-    bucket_name = "middleware-jboss-${var.middleware_version}"
+    bucket_name = "middleware-jboss-${replace(var.middleware_version, ".", "-")}"
     description = "JBoss EAP ${var.middleware_version} middleware image"
     bucket_labels = {
       "layer"      = "middleware"

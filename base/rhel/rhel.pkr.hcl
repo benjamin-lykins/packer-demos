@@ -86,7 +86,7 @@ build {
   name    = "base-rhel-${var.os_version}"
 
   hcp_packer_registry {
-    bucket_name = "base-rhel-${var.os_version}"
+    bucket_name = "base-rhel-${replace(var.os_version, ".", "-")}"
     description = "Base RHEL ${var.os_version} image"
     bucket_labels = {
       "layer" = "base"

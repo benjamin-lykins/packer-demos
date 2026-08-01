@@ -86,7 +86,7 @@ build {
   name    = "base-ubuntu-${var.os_version}"
 
   hcp_packer_registry {
-    bucket_name = "base-ubuntu-${var.os_version}"
+    bucket_name = "base-ubuntu-${replace(var.os_version, ".", "-")}"
     description = "Base Ubuntu ${var.os_version} image"
     bucket_labels = {
       "layer" = "base"

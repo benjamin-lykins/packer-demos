@@ -2,6 +2,6 @@
 # Worker application — v2 (current)
 
 app_version        = "v2.0.0"
-hcp_source_bucket  = "middleware-tomcat-11.0"
+hcp_source_bucket  = "middleware-tomcat-11-0"
 ssh_username       = "ec2-user"
 output_ami_name    = "app-worker-v2.0.0-{{timestamp}}"

@@ -104,7 +104,7 @@ build {
   name    = "middleware-nginx-${var.middleware_version}"
 
   hcp_packer_registry {
-    bucket_name = "middleware-nginx-${var.middleware_version}"
+    bucket_name = "middleware-nginx-${replace(var.middleware_version, ".", "-")}"
     description = "Nginx ${var.middleware_version} middleware image"
     bucket_labels = {
       "layer"      = "middleware"

@@ -86,7 +86,7 @@ build {
   name    = "base-debian-${var.os_version}"
 
   hcp_packer_registry {
-    bucket_name = "base-debian-${var.os_version}"
+    bucket_name = "base-debian-${replace(var.os_version, ".", "-")}"
     description = "Base Debian ${var.os_version} image"
     bucket_labels = {
       "layer" = "base"

@@ -104,7 +104,7 @@ build {
   name    = "middleware-tomcat-${var.middleware_version}"
 
   hcp_packer_registry {
-    bucket_name = "middleware-tomcat-${var.middleware_version}"
+    bucket_name = "middleware-tomcat-${replace(var.middleware_version, ".", "-")}"
     description = "Apache Tomcat ${var.middleware_version} middleware image"
     bucket_labels = {
       "layer"      = "middleware"

@@ -104,7 +104,7 @@ build {
   name    = "middleware-weblogic-${var.middleware_version}"
 
   hcp_packer_registry {
-    bucket_name = "middleware-weblogic-${var.middleware_version}"
+    bucket_name = "middleware-weblogic-${replace(var.middleware_version, ".", "-")}"
     description = "Oracle WebLogic ${var.middleware_version} middleware image"
     bucket_labels = {
       "layer"      = "middleware"

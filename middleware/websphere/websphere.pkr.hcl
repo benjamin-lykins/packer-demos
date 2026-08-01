@@ -104,7 +104,7 @@ build {
   name    = "middleware-websphere-${var.middleware_version}"
 
   hcp_packer_registry {
-    bucket_name = "middleware-websphere-${var.middleware_version}"
+    bucket_name = "middleware-websphere-${replace(var.middleware_version, ".", "-")}"
     description = "IBM WebSphere ${var.middleware_version} middleware image"
     bucket_labels = {
       "layer"      = "middleware"

@@ -104,7 +104,7 @@ build {
   name    = "app-worker-${var.app_version}"
 
   hcp_packer_registry {
-    bucket_name = "app-worker-${var.app_version}"
+    bucket_name = "app-worker-${replace(var.app_version, ".", "-")}"
     description = "Worker application ${var.app_version} image"
     bucket_labels = {
       "layer" = "app"
