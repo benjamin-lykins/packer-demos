@@ -119,6 +119,9 @@ jobs:
       HCP_PROJECT_ID:               ${{ secrets.HCP_PROJECT_ID }}
       HCP_PACKER_BUILD_FINGERPRINT: "${{ github.run_id }}-${{ matrix.app }}-${{ matrix.version }}"
       AWS_DEFAULT_REGION:           ${{ vars.AWS_REGION }}
+      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN:     ${{ secrets.AWS_SESSION_TOKEN }}
 
     strategy:
       fail-fast: false
@@ -141,14 +144,6 @@ jobs:
         uses: hashicorp/setup-packer@main
         with:
           version: latest
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region:            ${{ vars.AWS_REGION }}
 
       - name: Write common vars file
         working-directory: ${{ github.workspace }}
