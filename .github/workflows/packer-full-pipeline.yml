@@ -6,8 +6,13 @@
 # Triggered manually (workflow_dispatch) so you can run the entire chain
 # end-to-end without waiting for a push to matching paths.
 #
-# The middleware and app tiers each receive the most recent AMI ID output
-# from the prior tier as `source_ami`.
+# Tiers chain via HCP Packer: each downstream build resolves its source AMI
+# from the prior tier's registry bucket on channel_name = "latest" (not via
+# workflow outputs / source_ami handoff).
+#
+# AWS secrets must allow ec2:DescribeImages (and other Packer EC2 actions)
+# with no session-policy deny — Packer always calls DescribeImages to
+# validate the source AMI.
 
 name: "Packer — Full Pipeline (base → middleware → app)"
 

@@ -4,5 +4,5 @@
 app_name           = "frontend"
 app_version        = "v2.0.0"
 hcp_source_bucket  = "middleware-nginx-1-27"
-ssh_username       = "ec2-user"
+ssh_username       = "ubuntu"
 output_ami_name    = "app-frontend-v2.0.0-{{timestamp}}"

@@ -3,6 +3,6 @@
 
 middleware_name    = "tomcat"
 middleware_version = "11.0"
-hcp_source_bucket  = "base-ubuntu-24"
-ssh_username       = "ec2-user"
+hcp_source_bucket  = "base-ubuntu-24-04"
+ssh_username       = "ubuntu"
 output_ami_name    = "middleware-tomcat-11.0-{{timestamp}}"

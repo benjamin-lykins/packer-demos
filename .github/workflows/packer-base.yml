@@ -10,6 +10,9 @@
 #   HCP_CLIENT_SECRET
 #   HCP_PROJECT_ID
 #
+# AWS secrets must allow ec2:DescribeImages (no session-policy deny);
+# Packer always calls that API to validate the source AMI.
+#
 # Required repository variables:
 #   AWS_REGION
 #   AWS_VPC_ID
