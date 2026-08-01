@@ -17,6 +17,15 @@ packer {
       version = "~> 1"
     }
   }
+
+  hcp_packer_registry {
+    bucket_name = "middleware-jboss-${replace(var.middleware_version, ".", "-")}"
+    description = "JBoss EAP ${var.middleware_version} middleware image"
+    bucket_labels = {
+      "layer"      = "middleware"
+      "middleware" = "jboss"
+    }
+  }
 }
 
 # ----------------------------
@@ -76,8 +85,9 @@ data "hcp-packer-artifact" "base" {
 # Source block
 # ----------------------------
 source "amazon-ebs" "jboss" {
-  region        = var.aws_region
-  source_ami    = data.hcp-packer-artifact.base.external_identifier
+  region                 = var.aws_region
+  skip_region_validation = true
+  source_ami             = data.hcp-packer-artifact.base.external_identifier
   instance_type = var.instance_type
   ssh_username  = var.ssh_username
   vpc_id        = var.vpc_id
@@ -98,15 +108,6 @@ source "amazon-ebs" "jboss" {
 # ----------------------------
 build {
   name    = "middleware-jboss-${var.middleware_version}"
-
-  hcp_packer_registry {
-    bucket_name = "middleware-jboss-${replace(var.middleware_version, ".", "-")}"
-    description = "JBoss EAP ${var.middleware_version} middleware image"
-    bucket_labels = {
-      "layer"      = "middleware"
-      "middleware" = "jboss"
-    }
-  }
 
   sources = ["source.amazon-ebs.jboss"]
 

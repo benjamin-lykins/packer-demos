@@ -16,6 +16,15 @@ packer {
       version = "~> 1"
     }
   }
+
+  hcp_packer_registry {
+    bucket_name = "base-ubuntu-${replace(var.os_version, ".", "-")}"
+    description = "Base Ubuntu ${var.os_version} image"
+    bucket_labels = {
+      "layer" = "base"
+      "os"    = "ubuntu"
+    }
+  }
 }
 
 # ----------------------------
@@ -61,6 +70,7 @@ variable "ssh_username" {
 # ----------------------------
 source "amazon-ebs" "ubuntu" {
   region                      = var.aws_region
+  skip_region_validation      = true
   source_ami                  = var.source_ami
   instance_type               = var.instance_type
   ssh_username                = var.ssh_username
@@ -84,15 +94,6 @@ source "amazon-ebs" "ubuntu" {
 # ----------------------------
 build {
   name    = "base-ubuntu-${var.os_version}"
-
-  hcp_packer_registry {
-    bucket_name = "base-ubuntu-${replace(var.os_version, ".", "-")}"
-    description = "Base Ubuntu ${var.os_version} image"
-    bucket_labels = {
-      "layer" = "base"
-      "os"    = "ubuntu"
-    }
-  }
 
   sources = ["source.amazon-ebs.ubuntu"]
 

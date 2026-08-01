@@ -17,6 +17,15 @@ packer {
       version = "~> 1"
     }
   }
+
+  hcp_packer_registry {
+    bucket_name = "app-backend-${replace(var.app_version, ".", "-")}"
+    description = "Backend application ${var.app_version} image"
+    bucket_labels = {
+      "layer" = "app"
+      "app"   = "backend"
+    }
+  }
 }
 
 # ----------------------------
@@ -76,8 +85,9 @@ data "hcp-packer-artifact" "middleware" {
 # Source block
 # ----------------------------
 source "amazon-ebs" "backend" {
-  region        = var.aws_region
-  source_ami    = data.hcp-packer-artifact.middleware.external_identifier
+  region                 = var.aws_region
+  skip_region_validation = true
+  source_ami             = data.hcp-packer-artifact.middleware.external_identifier
   instance_type = var.instance_type
   ssh_username  = var.ssh_username
   vpc_id        = var.vpc_id
@@ -98,15 +108,6 @@ source "amazon-ebs" "backend" {
 # ----------------------------
 build {
   name    = "app-backend-${var.app_version}"
-
-  hcp_packer_registry {
-    bucket_name = "app-backend-${replace(var.app_version, ".", "-")}"
-    description = "Backend application ${var.app_version} image"
-    bucket_labels = {
-      "layer" = "app"
-      "app"   = "backend"
-    }
-  }
 
   sources = ["source.amazon-ebs.backend"]
 

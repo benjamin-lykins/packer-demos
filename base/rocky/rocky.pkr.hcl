@@ -16,6 +16,15 @@ packer {
       version = "~> 1"
     }
   }
+
+  hcp_packer_registry {
+    bucket_name = "base-rocky-${replace(var.os_version, ".", "-")}"
+    description = "Base Rocky Linux ${var.os_version} image"
+    bucket_labels = {
+      "layer" = "base"
+      "os"    = "rocky"
+    }
+  }
 }
 
 # ----------------------------
@@ -61,6 +70,7 @@ variable "ssh_username" {
 # ----------------------------
 source "amazon-ebs" "rocky" {
   region                      = var.aws_region
+  skip_region_validation      = true
   source_ami                  = var.source_ami
   instance_type               = var.instance_type
   ssh_username                = var.ssh_username
@@ -84,15 +94,6 @@ source "amazon-ebs" "rocky" {
 # ----------------------------
 build {
   name    = "base-rocky-${var.os_version}"
-
-  hcp_packer_registry {
-    bucket_name = "base-rocky-${replace(var.os_version, ".", "-")}"
-    description = "Base Rocky Linux ${var.os_version} image"
-    bucket_labels = {
-      "layer" = "base"
-      "os"    = "rocky"
-    }
-  }
 
   sources = ["source.amazon-ebs.rocky"]
 
