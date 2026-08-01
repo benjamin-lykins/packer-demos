@@ -7,6 +7,9 @@
 #   AWS_ACCESS_KEY_ID
 #   AWS_SECRET_ACCESS_KEY
 #   AWS_SESSION_TOKEN        (optional — for STS assumed-role credentials)
+#   HCP_CLIENT_ID
+#   HCP_CLIENT_SECRET
+#   HCP_PROJECT_ID
 #
 # Required repository variables:
 #   AWS_REGION
@@ -15,7 +18,7 @@
 #   INSTANCE_TYPE
 #
 # Optional:
-#   SOURCE_AMI_BASE          Fallback base AMI for all middleware builds
+#   HCP_SOURCE_BUCKET_BASE   Override the base HCP bucket for all middleware builds
 
 name: "Packer — Middleware Images"
 
@@ -40,17 +43,7 @@ on:
         description: "Limit to one middleware (leave blank for all)"
         required: false
         default: ""
-      source_ami:
-        description: "Override source_ami for all jobs (e.g. ami-0abc1234)"
-        required: false
-        default: ""
   workflow_call:
-    inputs:
-      source_ami:
-        description: "Base AMI ID passed from the base tier workflow"
-        required: false
-        type: string
-        default: ""
     outputs:
       ami_id:
         description: "Last-built middleware AMI ID"
@@ -99,7 +92,7 @@ jobs:
           PKR_VAR_aws_region: "us-east-1"
           PKR_VAR_vpc_id: "vpc-00000000"
           PKR_VAR_subnet_id: "subnet-00000000"
-          PKR_VAR_source_ami: "ami-00000000"
+          PKR_VAR_hcp_source_bucket: "stub-bucket"
         run: |
           packer validate \
             -var-file=../../common.pkrvars.hcl \
@@ -115,6 +108,12 @@ jobs:
     needs: load-matrix
     if: github.event_name != 'pull_request'
     environment: aws-packer
+
+    env:
+      HCP_CLIENT_ID:                ${{ secrets.HCP_CLIENT_ID }}
+      HCP_CLIENT_SECRET:            ${{ secrets.HCP_CLIENT_SECRET }}
+      HCP_PROJECT_ID:               ${{ secrets.HCP_PROJECT_ID }}
+      HCP_PACKER_BUILD_FINGERPRINT: "${{ github.run_id }}-${{ matrix.middleware }}-${{ matrix.version }}"
 
     strategy:
       fail-fast: false
@@ -166,15 +165,12 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Override source_ami in vars file
+      - name: Override hcp_source_bucket in vars file
         if: >
-          steps.filter.outputs.skip != 'true' && (
-          inputs.source_ami != '' ||
-          github.event.inputs.source_ami != '' ||
-          vars.SOURCE_AMI_BASE != '')
+          steps.filter.outputs.skip != 'true' &&
+          vars.HCP_SOURCE_BUCKET_BASE != ''
         run: |
-          SOURCE="${{ inputs.source_ami || github.event.inputs.source_ami || vars.SOURCE_AMI_BASE }}"
-          sed -i "s|source_ami.*=.*|source_ami = \"${SOURCE}\"|" ${{ matrix.vars_file }}
+          sed -i "s|hcp_source_bucket.*=.*|hcp_source_bucket = \"${{ vars.HCP_SOURCE_BUCKET_BASE }}\"|" ${{ matrix.vars_file }}
 
       - name: Packer init
         if: steps.filter.outputs.skip != 'true'

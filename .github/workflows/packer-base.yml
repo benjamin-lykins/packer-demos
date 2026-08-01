@@ -6,6 +6,9 @@
 #   AWS_ACCESS_KEY_ID
 #   AWS_SECRET_ACCESS_KEY
 #   AWS_SESSION_TOKEN        (optional — for STS assumed-role credentials)
+#   HCP_CLIENT_ID
+#   HCP_CLIENT_SECRET
+#   HCP_PROJECT_ID
 #
 # Required repository variables:
 #   AWS_REGION
@@ -104,6 +107,12 @@ jobs:
     needs: load-matrix
     if: github.event_name != 'pull_request'
     environment: aws-packer
+
+    env:
+      HCP_CLIENT_ID:                ${{ secrets.HCP_CLIENT_ID }}
+      HCP_CLIENT_SECRET:            ${{ secrets.HCP_CLIENT_SECRET }}
+      HCP_PROJECT_ID:               ${{ secrets.HCP_PROJECT_ID }}
+      HCP_PACKER_BUILD_FINGERPRINT: "${{ github.run_id }}-${{ matrix.distro }}-${{ matrix.version }}"
 
     strategy:
       fail-fast: false

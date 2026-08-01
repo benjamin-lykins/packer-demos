@@ -31,12 +31,6 @@ jobs:
     needs: base
     uses: ./.github/workflows/packer-middleware.yml
     secrets: inherit
-    with:
-      # Pass the AMI ID output from the base tier as the source for
-      # all middleware builds. In practice you would parameterise this
-      # further per-middleware; this wires up a single shared base AMI
-      # as a starting point for the demo pipeline.
-      source_ami: ${{ needs.base.outputs.ami_id }}
 
   # ------------------------------------------------------------------
   # Tier 3 — App images (depends on middleware completing)
@@ -46,5 +40,3 @@ jobs:
     needs: middleware
     uses: ./.github/workflows/packer-app.yml
     secrets: inherit
-    with:
-      source_ami: ${{ needs.middleware.outputs.ami_id }}

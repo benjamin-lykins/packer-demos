@@ -84,6 +84,16 @@ source "amazon-ebs" "rocky" {
 # ----------------------------
 build {
   name    = "base-rocky-${var.os_version}"
+
+  hcp_packer_registry {
+    bucket_name = "base-rocky-${var.os_version}"
+    description = "Base Rocky Linux ${var.os_version} image"
+    bucket_labels = {
+      "layer" = "base"
+      "os"    = "rocky"
+    }
+  }
+
   sources = ["source.amazon-ebs.rocky"]
 
   provisioner "shell" {

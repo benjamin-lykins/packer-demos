@@ -2,6 +2,6 @@
 # Nginx 1.27 — latest stable
 
 middleware_version = "1.27"
-source_ami         = "ami-0placeholder000001" # Replace with output AMI ID from base layer build
+hcp_source_bucket  = "base-ubuntu-24"
 ssh_username       = "ec2-user"
 output_ami_name    = "middleware-nginx-1.27-{{timestamp}}"

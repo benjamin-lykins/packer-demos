@@ -16,6 +16,10 @@ packer {
       source  = "github.com/hashicorp/amazon"
       version = "~> 1"
     }
+    hcp = {
+      source  = "github.com/hashicorp/hcp"
+      version = "~> 0.1"
+    }
   }
 }
 
@@ -47,9 +51,9 @@ variable "middleware_version" {
   description = "JBoss EAP version label (e.g. 8.0)"
 }
 
-variable "source_ami" {
+variable "hcp_source_bucket" {
   type        = string
-  description = "Base AMI ID to build on top of (output of a base layer build)"
+  description = "HCP Packer bucket name of the base image to build on top of"
 }
 
 variable "ssh_username" {
@@ -63,11 +67,21 @@ variable "output_ami_name" {
 }
 
 # ----------------------------
+# HCP Packer source AMI lookup
+# ----------------------------
+data "hcp-packer-artifact" "base" {
+  bucket_name         = var.hcp_source_bucket
+  platform            = "aws"
+  region              = var.aws_region
+  channel_name        = "latest"
+}
+
+# ----------------------------
 # Source block
 # ----------------------------
 source "amazon-ebs" "jboss" {
   region        = var.aws_region
-  source_ami    = var.source_ami
+  source_ami    = data.hcp-packer-artifact.base.external_identifier
   instance_type = var.instance_type
   ssh_username  = var.ssh_username
   vpc_id        = var.vpc_id
@@ -88,6 +102,16 @@ source "amazon-ebs" "jboss" {
 # ----------------------------
 build {
   name    = "middleware-jboss-${var.middleware_version}"
+
+  hcp_packer_registry {
+    bucket_name = "middleware-jboss-${var.middleware_version}"
+    description = "JBoss EAP ${var.middleware_version} middleware image"
+    bucket_labels = {
+      "layer"      = "middleware"
+      "middleware" = "jboss"
+    }
+  }
+
   sources = ["source.amazon-ebs.jboss"]
 
   provisioner "shell" {

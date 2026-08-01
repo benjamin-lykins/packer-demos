@@ -16,6 +16,10 @@ packer {
       source  = "github.com/hashicorp/amazon"
       version = "~> 1"
     }
+    hcp = {
+      source  = "github.com/hashicorp/hcp"
+      version = "~> 0.1"
+    }
   }
 }
 
@@ -47,9 +51,9 @@ variable "app_version" {
   description = "Application version label (e.g. v2.0.0)"
 }
 
-variable "source_ami" {
+variable "hcp_source_bucket" {
   type        = string
-  description = "Middleware or base AMI ID to build on top of"
+  description = "HCP Packer bucket name of the middleware image to build on top of"
 }
 
 variable "ssh_username" {
@@ -63,11 +67,21 @@ variable "output_ami_name" {
 }
 
 # ----------------------------
+# HCP Packer source AMI lookup
+# ----------------------------
+data "hcp-packer-artifact" "middleware" {
+  bucket_name         = var.hcp_source_bucket
+  platform            = "aws"
+  region              = var.aws_region
+  channel_name        = "latest"
+}
+
+# ----------------------------
 # Source block
 # ----------------------------
 source "amazon-ebs" "worker" {
   region        = var.aws_region
-  source_ami    = var.source_ami
+  source_ami    = data.hcp-packer-artifact.middleware.external_identifier
   instance_type = var.instance_type
   ssh_username  = var.ssh_username
   vpc_id        = var.vpc_id
@@ -88,6 +102,16 @@ source "amazon-ebs" "worker" {
 # ----------------------------
 build {
   name    = "app-worker-${var.app_version}"
+
+  hcp_packer_registry {
+    bucket_name = "app-worker-${var.app_version}"
+    description = "Worker application ${var.app_version} image"
+    bucket_labels = {
+      "layer" = "app"
+      "app"   = "worker"
+    }
+  }
+
   sources = ["source.amazon-ebs.worker"]
 
   provisioner "shell" {
