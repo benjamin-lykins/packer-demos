@@ -16,10 +16,6 @@ packer {
       source  = "github.com/hashicorp/amazon"
       version = "~> 1"
     }
-    hcp = {
-      source  = "github.com/hashicorp/hcp"
-      version = "~> 0.1"
-    }
   }
 }
 
