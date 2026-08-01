@@ -114,6 +114,7 @@ jobs:
       HCP_CLIENT_SECRET:            ${{ secrets.HCP_CLIENT_SECRET }}
       HCP_PROJECT_ID:               ${{ secrets.HCP_PROJECT_ID }}
       HCP_PACKER_BUILD_FINGERPRINT: "${{ github.run_id }}-${{ matrix.middleware }}-${{ matrix.version }}"
+      AWS_DEFAULT_REGION:           ${{ vars.AWS_REGION }}
 
     strategy:
       fail-fast: false
