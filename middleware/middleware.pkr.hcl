@@ -16,14 +16,14 @@ packer {
       version = "~> 1"
     }
   }
+}
 
-  hcp_packer_registry {
-    bucket_name = "middleware-${var.middleware_name}-${replace(var.middleware_version, ".", "-")}"
-    description = "${var.middleware_name} ${var.middleware_version} middleware image"
-    bucket_labels = {
-      "layer"      = "middleware"
-      "middleware" = var.middleware_name
-    }
+hcp_packer_registry {
+  bucket_name = "middleware-${var.middleware_name}-${replace(var.middleware_version, ".", "-")}"
+  description = "${var.middleware_name} ${var.middleware_version} middleware image"
+  bucket_labels = {
+    "layer"      = "middleware"
+    "middleware" = var.middleware_name
   }
 }
 

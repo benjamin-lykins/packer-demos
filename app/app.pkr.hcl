@@ -16,14 +16,14 @@ packer {
       version = "~> 1"
     }
   }
+}
 
-  hcp_packer_registry {
-    bucket_name = "app-${var.app_name}-${replace(var.app_version, ".", "-")}"
-    description = "${var.app_name} application ${var.app_version} image"
-    bucket_labels = {
-      "layer" = "app"
-      "app"   = var.app_name
-    }
+hcp_packer_registry {
+  bucket_name = "app-${var.app_name}-${replace(var.app_version, ".", "-")}"
+  description = "${var.app_name} application ${var.app_version} image"
+  bucket_labels = {
+    "layer" = "app"
+    "app"   = var.app_name
   }
 }
 

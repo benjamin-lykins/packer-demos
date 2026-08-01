@@ -16,14 +16,14 @@ packer {
       version = "~> 1"
     }
   }
+}
 
-  hcp_packer_registry {
-    bucket_name = "base-${var.os_name}-${replace(var.os_version, ".", "-")}"
-    description = "Base ${var.os_name} ${var.os_version} image"
-    bucket_labels = {
-      "layer" = "base"
-      "os"    = var.os_name
-    }
+hcp_packer_registry {
+  bucket_name = "base-${var.os_name}-${replace(var.os_version, ".", "-")}"
+  description = "Base ${var.os_name} ${var.os_version} image"
+  bucket_labels = {
+    "layer" = "base"
+    "os"    = var.os_name
   }
 }
 
